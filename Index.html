@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Discord Webhook Sender</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #2c2f33;
+      color: white;
+      padding: 20px;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border: none;
+      box-sizing: border-box;
+    }
+    textarea { resize: vertical; }
+    button {
+      background: #7289da;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background: #5b6eae; }
+    .embed-options { display: none; }
+  </style>
+</head>
+<body>
+  <h2>Discord Webhook Sender (with File Upload)</h2>
+
+  <label>Choose Webhook:</label>
+  <select id="webhookSelect">
+    <option value="">-- Select a webhook --</option>
+    <option value="https://discord.com/api/webhooks/1390143183157071983/YROL8bQd3Ppwg-ehoOtBWcFfdPmKj6cBdslAePbADCASgda6nADsVWby7ZOCHOhtpRDR">Default Webhook</option>
+  </select>
+
+  <label>Or enter custom Webhook URL:</label>
+  <input type="text" id="webhookInput" value="https://discord.com/api/webhooks/1390143183157071983/YROL8bQd3Ppwg-ehoOtBWcFfdPmKj6cBdslAePbADCASgda6nADsVWby7ZOCHOhtpRDR">
+
+  <label>Message Type:</label>
+  <select id="type">
+    <option value="message">Normal Message</option>
+    <option value="embed">Embed</option>
+  </select>
+
+  <div id="message-options">
+    <label>Message Content:</label>
+    <textarea id="content" placeholder="Your message..."></textarea>
+  </div>
+
+  <div class="embed-options" id="embed-options">
+    <label>Embed Title:</label>
+    <input type="text" id="title" placeholder="Title">
+
+    <label>Embed Description:</label>
+    <textarea id="description" placeholder="Description"></textarea>
+
+    <label>Embed Color (hex):</label>
+    <input type="text" id="color" placeholder="#7289da">
+  </div>
+
+  <label>Attach a File (image, txt, etc.):</label>
+  <input type="file" id="fileInput">
+
+  <button onclick="send()">Send</button>
+
+  <script>
+    const typeSelect = document.getElementById('type');
+    const embedOptions = document.getElementById('embed-options');
+    const messageOptions = document.getElementById('message-options');
+    const webhookSelect = document.getElementById('webhookSelect');
+    const webhookInput = document.getElementById('webhookInput');
+
+    typeSelect.addEventListener('change', () => {
+      if (typeSelect.value === 'embed') {
+        embedOptions.style.display = 'block';
+        messageOptions.style.display = 'none';
+      } else {
+        embedOptions.style.display = 'none';
+        messageOptions.style.display = 'block';
+      }
+    });
+
+    webhookSelect.addEventListener('change', () => {
+      if (webhookSelect.value) {
+        webhookInput.value = webhookSelect.value;
+      }
+    });
+
+    async function send() {
+      const url = webhookInput.value.trim();
+      if (!url.startsWith("https://discord.com/api/webhooks")) {
+        alert("Invalid webhook URL");
+        return;
+      }
+
+      const file = document.getElementById('fileInput').files[0];
+      const type = typeSelect.value;
+      const formData = new FormData();
+
+      let payload = {};
+
+      if (type === 'message') {
+        payload.content = document.getElementById('content').value;
+      } else {
+        const title = document.getElementById('title').value;
+        const description = document.getElementById('description').value;
+        const color = parseInt(document.getElementById('color').value.replace("#", ""), 16) || 0x7289da;
+        payload.embeds = [{
+          title,
+          description,
+          color
+        }];
+      }
+
+      formData.append("payload_json", JSON.stringify(payload));
+
+      if (file) {
+        formData.append("file", file);
+      }
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          body: formData
+        });
